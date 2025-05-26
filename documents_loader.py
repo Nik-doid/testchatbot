@@ -1,10 +1,39 @@
 import os
-from langchain_community.document_loaders import DirectoryLoader
+from langchain_community.document_loaders import (
+    DirectoryLoader,
+    TextLoader,
+    UnstructuredMarkdownLoader
+)
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
+SUPPORTED_EXTENSIONS = {
+    ".txt": TextLoader,
+    ".md": UnstructuredMarkdownLoader,
+}
+
 def load_documents():
-    loader = DirectoryLoader("documents", glob="manual.txt")
-    docs = loader.load()
+    try:
+        # Load from multiple file types
+        loaders = []
+        for ext, loader_class in SUPPORTED_EXTENSIONS.items():
+            loaders.append(DirectoryLoader(
+                "documents",
+                glob=f"**/*{ext}",
+                loader_cls=loader_class,
+                show_progress=True
+            ))
+        
+        docs = []
+        for loader in loaders:
+            docs.extend(loader.load())
+        
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=500,
+            chunk_overlap=100,
+            length_function=len,
+            separators=["\n\n", "\n", ". ", " ", ""]
+        )
+        return text_splitter.split_documents(docs)
     
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=150, chunk_overlap=30)
-    return text_splitter.split_documents(docs)
+    except Exception as e:
+        raise RuntimeError(f"Document loading failed: {str(e)}")
