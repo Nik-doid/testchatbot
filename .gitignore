@@ -5,3 +5,4 @@ chroma_db
 __pycache__
 scrape.py
 backend/documents
+docker-compose.yml

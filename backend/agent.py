@@ -38,7 +38,7 @@ llm = OllamaLLM(
     system=SYSTEM_PROMPT
 )
 
-# Set up retriever from your vector store (e.g., Chroma)
+
 vector_store = get_vector_store()
 retriever = vector_store.as_retriever()
 
