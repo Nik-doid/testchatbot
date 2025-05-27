@@ -1,3 +1,6 @@
 venv
-__pycache__
+backend/__pycache__
 chroma_db
+.env
+__pycache__
+scrape.py

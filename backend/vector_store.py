@@ -1,6 +1,6 @@
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
-from documents_loader import load_documents
+from .documents_loader import load_documents
 
 _vector_store = None
 

@@ -17,7 +17,7 @@ def load_documents():
         loaders = []
         for ext, loader_class in SUPPORTED_EXTENSIONS.items():
             loaders.append(DirectoryLoader(
-                "documents",
+                "backend/documents",
                 glob=f"**/*{ext}",
                 loader_cls=loader_class,
                 show_progress=True
@@ -28,8 +28,8 @@ def load_documents():
             docs.extend(loader.load())
         
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=500,
-            chunk_overlap=100,
+            chunk_size=2000,
+            chunk_overlap=500,
             length_function=len,
             separators=["\n\n", "\n", ". ", " ", ""]
         )

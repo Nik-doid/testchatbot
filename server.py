@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from agent import chatbot_agent 
+from backend.agent import chatbot_agent 
 
 app = FastAPI(
     title="RAG Chatbot API",
@@ -21,23 +21,16 @@ app.add_middleware(
 # Request and Response Schemas
 class QueryRequest(BaseModel):
     query: str
+    session_id: str
 
 class QueryResponse(BaseModel):
     response: str
-
-@app.get("/")
-def read_root():
-    return {"message": "Welcome to the RAG Chatbot API!"}
+    
 
 @app.post("/chat", response_model=QueryResponse)
 def chat(request: QueryRequest):
-    """
-    Accepts a user query and returns a response generated using
-    the Retrieval-Augmented Generation (RAG) pipeline with fallback
-    to general language model knowledge.
-    """
     try:
-        answer = chatbot_agent(request.query)
+        answer = chatbot_agent(request.query, session_id=request.session_id)  
         return {"response": answer}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
