@@ -28,8 +28,8 @@ def load_documents():
             docs.extend(loader.load())
         
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=2000,
-            chunk_overlap=500,
+            chunk_size=1000,
+            chunk_overlap=200,
             length_function=len,
             separators=["\n\n", "\n", ". ", " ", ""]
         )
