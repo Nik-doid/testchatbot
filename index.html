@@ -223,6 +223,7 @@
         onkeydown="handleKey(event)"
       />
       <button onclick="sendMessage()">Send</button>
+      <button onclick="clearChat()">Clear Chat</button>
     </div>
 
     <script>
@@ -276,20 +277,6 @@
           appendMessage("bot", "⚠️ Error contacting the server.");
           console.error(err);
         }
-      }
-
-      function appendMessage(sender, message) {
-        const messages = document.getElementById("messages");
-        const div = document.createElement("div");
-        div.className = sender;
-
-        const bubble = document.createElement("div");
-        bubble.className = "bubble";
-        bubble.innerText = message;
-
-        div.appendChild(bubble);
-        messages.appendChild(div);
-        scrollToBottom();
       }
 
       function scrollToBottom() {
@@ -353,6 +340,25 @@
         div.appendChild(timestamp);
         messages.appendChild(div);
         scrollToBottom();
+      }
+
+      async function clearChat() {
+        const messages = document.getElementById("messages");
+        messages.innerHTML = "";
+
+        try {
+          const res = await fetch(
+            `http://localhost:8000/clear_messages?session_id=${sessionId}`,
+            {
+              method: "DELETE",
+            }
+          );
+          const data = await res.json();
+          console.log(data.message);
+        } catch (err) {
+          console.error("Failed to clear chat in backend:", err);
+          alert("⚠️ Failed to clear chat history from server.");
+        }
       }
     </script>
   </body>
