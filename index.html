@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ClassyBot</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background: #f0f9f0;
+      }
+      #login-section,
+      #chat-section {
+        max-width: 600px;
+        margin: 20px auto;
+        background: #ffffff;
+        padding: 25px;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 100, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+      #login-section:hover,
+      #chat-section:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 24px rgba(0, 120, 0, 0.15);
+      }
+      #chat-section {
+        display: none;
+        animation: fadeIn 0.5s ease forwards;
+      }
+      #messages {
+        border: 1px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 15px;
+        height: 400px;
+        overflow-y: auto;
+        margin-bottom: 15px;
+        background: #f9fff9;
+        transition: all 0.3s ease;
+      }
+      .bubble {
+        display: inline-block;
+        padding: 12px 16px;
+        margin: 8px;
+        border-radius: 20px;
+        max-width: 75%;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        animation: fadeInUp 0.3s ease forwards;
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      .user {
+        text-align: right;
+      }
+      .user .bubble {
+        background: #2e7d32;
+        color: white;
+        border-bottom-right-radius: 0;
+      }
+      .bot {
+        text-align: left;
+      }
+      .bot .bubble {
+        background: #e8f5e9;
+        color: #1b5e20;
+        border-bottom-left-radius: 0;
+        border: 1px solid #c8e6c9;
+      }
+      input {
+        padding: 12px;
+        width: 100%;
+        margin-top: 10px;
+        box-sizing: border-box;
+        font-size: 1rem;
+        border: 1px solid #c8e6c9;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+      }
+      input:focus {
+        outline: none;
+        border-color: #2e7d32;
+        box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.2);
+      }
+      button {
+        padding: 12px;
+        width: 100%;
+        margin-top: 15px;
+        box-sizing: border-box;
+        font-size: 1rem;
+        background: #2e7d32;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+      button:hover {
+        background: #1b5e20;
+        transform: translateY(-2px);
+      }
+      button:active {
+        transform: translateY(0);
+      }
+      .loading {
+        font-style: italic;
+        color: #689f38;
+        margin: 5px 0;
+        animation: pulse 1.5s infinite;
+      }
+      h2,
+      h3 {
+        color: #1b5e20;
+        margin-top: 0;
+      }
+      h2 {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      /* Animations */
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes fadeInUp {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 0.6;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
+
+      @keyframes slideInRight {
+        from {
+          transform: translateX(20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes slideInLeft {
+        from {
+          transform: translateX(-20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      /* Add specific animations for user and bot messages */
+      .user .bubble {
+        animation-name: slideInRight;
+      }
+
+      .bot .bubble {
+        animation-name: slideInLeft;
+      }
+
+      /* Scrollbar styling */
+      #messages::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      #messages::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+      }
+
+      #messages::-webkit-scrollbar-thumb {
+        background: #a5d6a7;
+        border-radius: 10px;
+      }
+
+      #messages::-webkit-scrollbar-thumb:hover {
+        background: #81c784;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="login-section">
+      <h2>Welcome to ClassyBot</h2>
+      <input type="email" id="email" placeholder="Enter your email" required />
+      <button onclick="startSession()">Start Chat</button>
+    </div>
+
+    <div id="chat-section">
+      <h3>ClassyBot Chat</h3>
+      <div id="messages"></div>
+      <input
+        type="text"
+        id="queryInput"
+        placeholder="Ask something..."
+        onkeydown="handleKey(event)"
+      />
+      <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <script>
+      let sessionId = null;
+
+      function startSession() {
+        const email = document.getElementById("email").value.trim();
+        if (!email) return alert("Please enter your email.");
+
+        sessionId = btoa(email);
+        localStorage.setItem("classybot-session", sessionId);
+
+        location.reload();
+      }
+
+      function handleKey(e) {
+        if (e.key === "Enter") sendMessage();
+      }
+
+      async function sendMessage() {
+        const input = document.getElementById("queryInput");
+        const query = input.value.trim();
+        if (!query) return;
+
+        appendMessage("user", query);
+        input.value = "";
+
+        // Show loading indicator
+        const loadingDiv = document.createElement("div");
+        loadingDiv.className = "bot";
+        loadingDiv.id = "loading";
+        loadingDiv.innerHTML = `<div class="bubble loading">Typing...</div>`;
+        document.getElementById("messages").appendChild(loadingDiv);
+        scrollToBottom();
+
+        try {
+          const res = await fetch("http://localhost:8000/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query, session_id: sessionId }),
+          });
+
+          const data = await res.json();
+
+          // Remove loading
+          document.getElementById("loading")?.remove();
+
+          appendMessage("bot", data.response);
+        } catch (err) {
+          document.getElementById("loading")?.remove();
+          appendMessage("bot", "⚠️ Error contacting the server.");
+          console.error(err);
+        }
+      }
+
+      function appendMessage(sender, message) {
+        const messages = document.getElementById("messages");
+        const div = document.createElement("div");
+        div.className = sender;
+
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+        bubble.innerText = message;
+
+        div.appendChild(bubble);
+        messages.appendChild(div);
+        scrollToBottom();
+      }
+
+      function scrollToBottom() {
+        const messages = document.getElementById("messages");
+        messages.scrollTop = messages.scrollHeight;
+      }
+
+      // Auto-login if session exists
+      window.onload = async () => {
+        const savedSession = localStorage.getItem("classybot-session");
+        if (savedSession) {
+          sessionId = savedSession;
+          document.getElementById("login-section").style.display = "none";
+          document.getElementById("chat-section").style.display = "block";
+
+          try {
+            const res = await fetch(
+              `http://localhost:8000/messages?session_id=${sessionId}`
+            );
+            const data = await res.json();
+
+            if (data.messages && Array.isArray(data.messages)) {
+              data.messages.forEach(({ sender, message }) => {
+                appendMessage(sender, message);
+              });
+            }
+          } catch (err) {
+            console.error("Failed to load previous messages", err);
+          }
+        }
+      };
+    </script>
+  </body>
+</html>
