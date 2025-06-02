@@ -69,6 +69,13 @@ llm = OllamaLLM(
     system=SYSTEM_PROMPT
 )
 
+llms= OllamaLLM(
+    model="mistral",
+    base_url="http://localhost:11434",
+    temperature=0.7,
+    system=SYSTEM_PROMPT
+)
+
 
 vector_store = get_vector_store()
 retriever = vector_store.as_retriever()
@@ -123,20 +130,24 @@ def chatbot_agent(query: str, session_id: str = "default") -> str:
             return_messages=True
         )
 
+        # Language detection
         nepali_query = is_nepali_text(query)
 
+        # Choose appropriate LLM based on language
+        selected_llm = llm if nepali_query else llms
+
+        # Language-specific instructions
         prompt_prefix = ""
         if nepali_query:
             prompt_prefix = (
-            "Please answer the following question strictly in Nepali language only. "
-            "Do NOT respond in Hindi or any other language. Use standard Nepali vocabulary and grammar.\n\n"
+                "Please answer the following question strictly in Nepali language only. "
+                "Do NOT respond in Hindi or any other language. Use standard Nepali vocabulary and grammar.\n\n"
             )
-
 
         question_with_lang = prompt_prefix + query
 
         qa_chain = ConversationalRetrievalChain.from_llm(
-            llm=llm,
+            llm=selected_llm,
             retriever=retriever,
             memory=memory,
             combine_docs_chain_kwargs={"prompt": rag_prompt},
@@ -145,7 +156,6 @@ def chatbot_agent(query: str, session_id: str = "default") -> str:
         result = qa_chain.invoke({"question": question_with_lang})
         response_text = result.get("answer", "")
 
-        # Remove the prompt prefix from the response if it appears there (just in case)
         if prompt_prefix and response_text.startswith(prompt_prefix):
             response_text = response_text[len(prompt_prefix):].strip()
 
@@ -184,7 +194,9 @@ Answer:
 """
 
         try:
-            response_text = llm.invoke(fallback_prompt)
+            # Use correct fallback LLM
+            selected_fallback_llm = llm if nepali_query else llms
+            response_text = selected_fallback_llm.invoke(fallback_prompt)
         except Exception as e:
             return f"LLM fallback error: {str(e)}"
 
