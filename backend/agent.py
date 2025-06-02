@@ -63,7 +63,7 @@ Never guess or invent information. Use retrieved documents when available; other
 
 # Initialize LLM with the system prompt
 llm = OllamaLLM(
-    model="mistral",
+    model="gemma3",
     base_url="http://localhost:11434",
     temperature=0.7,
     system=SYSTEM_PROMPT
@@ -142,7 +142,7 @@ def chatbot_agent(query: str, session_id: str = "default") -> str:
             combine_docs_chain_kwargs={"prompt": rag_prompt},
         )
 
-        result = qa_chain({"question": question_with_lang})
+        result = qa_chain.invoke({"question": question_with_lang})
         response_text = result.get("answer", "")
 
         # Remove the prompt prefix from the response if it appears there (just in case)
