@@ -63,7 +63,7 @@ Never guess or invent information. Use retrieved documents when available; other
 
 # Initialize LLM with the system prompt
 llm = OllamaLLM(
-    model="gemma3",
+    model="gemma3:12b",
     base_url="http://localhost:11434",
     temperature=0.7,
     system=SYSTEM_PROMPT
