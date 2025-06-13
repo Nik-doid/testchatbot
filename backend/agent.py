@@ -1,4 +1,5 @@
 from langchain_ollama import OllamaLLM
+from langchain_groq import ChatGroq
 from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
 from langchain_community.chat_message_histories import RedisChatMessageHistory
@@ -7,7 +8,6 @@ from .vector_store import get_vector_store
 from dotenv import load_dotenv
 import os
 
-# Load environment variables
 load_dotenv()
 
 SMALL_TALK_RESPONSES = {
@@ -26,29 +26,11 @@ def detect_small_talk(query: str) -> str | None:
     normalized = query.lower().strip()
     return SMALL_TALK_RESPONSES.get(normalized)
 
-# Define consistent system behavior for the assistant
-SYSTEM_PROMPT = """
-You are ClassyBot, a professional virtual assistant for Classic Tech — a leading Internet Service Provider (ISP) and IPTV service provider.
-
-Your job is to assist users with clear, accurate, and friendly responses related to:
-- Internet and IPTV plans, pricing, and availability
-- Installation, setup, and troubleshooting
-- Billing, renewals, and account support
-- Service status, outages, and maintenance
-- Common issues like slow internet, router problems, login errors, or missing channels
-
-Always respond concisely. Provide detailed help only when asked.
-If a question is not related to Classic Tech, respond with:
-"Please ask questions related to Classic Tech services."
-
-Never guess or invent information. Use retrieved documents when available; otherwise, respond only if the answer is within your expertise.
-"""
-
-llm = OllamaLLM(
-    model="mistral",
-    base_url="http://localhost:11434",
-    temperature=0.7,
-    system=SYSTEM_PROMPT
+API_KEY = os.getenv("GROQ_API")
+llm = ChatGroq(
+    model_name="llama3-70b-8192",
+    api_key=API_KEY,
+    temperature=0.7
 )
 
 vector_store = get_vector_store()
@@ -85,7 +67,6 @@ def chatbot_agent(query: str, session_id: str = "default") -> str:
 
     try:
         redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-
         message_history = RedisChatMessageHistory(
             url=redis_url,
             session_id=session_id
@@ -107,9 +88,14 @@ def chatbot_agent(query: str, session_id: str = "default") -> str:
         result = qa_chain.invoke({"question": query})
         response_text = result.get("answer", "")
 
+        # Ensure response is plain string
+        if hasattr(response_text, 'content'):
+            response_text = response_text.content
+
     except Exception as e:
         return f"Error during RAG processing: {str(e)}"
 
+    # Fallback if irrelevant or empty
     if not response_text or any(phrase in response_text.lower() for phrase in fallback_phrases):
         fallback_prompt = f"""
 You are ClassyBot, a knowledgeable support assistant for Classic Tech (an ISP and IPTV provider in Nepal).
@@ -126,6 +112,8 @@ Answer:
 """
         try:
             response_text = llm.invoke(fallback_prompt)
+            if hasattr(response_text, 'content'):
+                response_text = response_text.content
         except Exception as e:
             return f"LLM fallback error: {str(e)}"
 

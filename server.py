@@ -1,15 +1,16 @@
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 from backend.agent import chatbot_agent 
 from langchain_community.chat_message_histories import RedisChatMessageHistory
 from dotenv import load_dotenv
 import os
-import redis.asyncio as redis  # Make sure you're using the async client!
+import redis.asyncio as redis
 
 app = FastAPI(
     title="RAG Chatbot API",
-    description="An API for querying a Retrieval-Augmented Generation chatbot using LangChain and Hugging Face LLMs.",
+    description="An API for querying a Retrieval-Augmented Generation chatbot using LangChain and Groq LLMs.",
     version="1.0.0"
 )
 
@@ -62,7 +63,10 @@ def chat(request: QueryRequest):
 @app.delete("/clear_messages")
 async def clear_messages(session_id: str = Query(...)):
     key = f"message_store:{session_id}"
-    deleted = await r.delete(key)
-    if deleted:
-        return {"message": "Chat history cleared."}
-    raise HTTPException(status_code=404, detail="Session not found.")
+    try:
+        deleted = await r.delete(key)
+        if deleted:
+            return {"message": "Chat history cleared."}
+        raise HTTPException(status_code=404, detail="Session not found.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to clear messages: {str(e)}")
