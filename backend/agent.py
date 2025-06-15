@@ -6,6 +6,7 @@ from langchain_community.chat_message_histories import RedisChatMessageHistory
 from langchain.prompts import PromptTemplate
 from .vector_store import get_vector_store
 from dotenv import load_dotenv
+from langdetect import detect
 import os
 
 load_dotenv()
@@ -63,7 +64,16 @@ def chatbot_agent(query: str, session_id: str = "default") -> str:
     if small_talk_response:
         return small_talk_response
 
-    fallback_phrases = ["i don't know", "i'm not sure", "couldn't find", "not listed", "don't have"]
+    try:
+        # Detect language
+        language = detect(query)
+    except Exception:
+        language = "en"  # fallback to English if detection fails
+
+    fallback_phrases = [
+        "i don't know", "i'm not sure", "couldn't find", "not listed", "don't have",
+        "मलाई थाहा छैन", "म निश्चित छैन", "पत्ता लगाउन सकिएन"
+    ]
 
     try:
         redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
@@ -88,16 +98,27 @@ def chatbot_agent(query: str, session_id: str = "default") -> str:
         result = qa_chain.invoke({"question": query})
         response_text = result.get("answer", "")
 
-        # Ensure response is plain string
         if hasattr(response_text, 'content'):
             response_text = response_text.content
 
     except Exception as e:
         return f"Error during RAG processing: {str(e)}"
 
-    # Fallback if irrelevant or empty
     if not response_text or any(phrase in response_text.lower() for phrase in fallback_phrases):
-        fallback_prompt = f"""
+        if language == "ne":
+            fallback_prompt = f"""
+तपाईं ClassyBot हुनुहुन्छ, Classic Tech (नेपालको एक इन्टरनेट र आइपिटिभी सेवा प्रदायक) को लागि जानकार सहायक।
+
+कृपया प्रयोगकर्ताको सोधिएको प्रश्नलाई तपाईंको ज्ञानको भरमा नेपाली भाषामा उत्तर दिनुहोस्।
+
+यदि तपाईंलाई उत्तर थाहा छैन भने वा सोधिएको जानकारी उपलब्ध छैन भने स्पष्ट रूपमा भन्नुहोस् र प्रयोगकर्तालाई https://classic.com.np मा जान वा ग्राहक सेवा सम्पर्क गर्न सुझाव दिनुहोस्।
+
+प्रश्न: {query}
+
+उत्तर:
+"""
+        else:
+            fallback_prompt = f"""
 You are ClassyBot, a knowledgeable support assistant for Classic Tech (an ISP and IPTV provider in Nepal).
 
 Please help the user with their question using your best general knowledge.
