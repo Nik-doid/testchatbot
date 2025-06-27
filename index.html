@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ClassyBot</title>
+    <style>
+      /* Base Reset & Font */
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background: linear-gradient(135deg, #dcedc8, #a5d6a7);
+        background-attachment: fixed;
+        overflow-x: hidden;
+      }
+
+      /* Card Styles for Login & Chat Section */
+      #login-section,
+      #chat-section {
+        max-width: 640px;
+        margin: 30px auto;
+        padding: 30px;
+        background: rgba(255, 255, 255, 0.75);
+        border-radius: 20px;
+        backdrop-filter: blur(12px);
+        box-shadow: 0 10px 30px rgba(0, 128, 0, 0.2);
+        animation: zoomFadeIn 0.6s ease forwards;
+        transform-origin: center;
+        transition: all 0.3s ease;
+      }
+
+      #login-section:hover,
+      #chat-section:hover {
+        transform: scale(1.02);
+        box-shadow: 0 16px 40px rgba(0, 128, 0, 0.3);
+      }
+
+      /* Chat Section Visibility & Animation */
+      #chat-section {
+        display: none;
+        animation: slideFadeIn 0.8s ease forwards;
+      }
+
+      /* Titles */
+      h2,
+      h3 {
+        color: #1b5e20;
+        margin-top: 0;
+        text-align: center;
+        animation: fadeIn 0.5s ease-out forwards;
+      }
+
+      h2 {
+        font-size: 2em;
+        margin-bottom: 20px;
+      }
+
+      /* Message Container */
+      #messages {
+        border: 1px solid #c5e1a5;
+        background: rgba(255, 255, 255, 0.6);
+        border-radius: 16px;
+        padding: 20px;
+        height: 420px;
+        overflow-y: auto;
+        margin-bottom: 20px;
+        box-shadow: inset 0 0 8px rgba(0, 100, 0, 0.05);
+        animation: fadeIn 0.5s ease forwards;
+      }
+
+      /* Bubbles */
+      .bubble {
+        display: inline-block;
+        padding: 14px 20px;
+        margin: 10px;
+        border-radius: 25px;
+        max-width: 80%;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        opacity: 0;
+        transform: translateY(10px);
+        animation: fadeInUp 0.4s ease forwards;
+      }
+
+      .user {
+        text-align: right;
+      }
+
+      .user .bubble {
+        background: linear-gradient(135deg, #66bb6a, #388e3c);
+        color: #fff;
+        border-bottom-right-radius: 0;
+        animation-name: slideInRight;
+      }
+
+      .bot {
+        text-align: left;
+      }
+
+      .bot .bubble {
+        background: rgba(232, 245, 233, 0.9);
+        color: #1b5e20;
+        border: 1px solid #c8e6c9;
+        border-bottom-left-radius: 0;
+        animation-name: slideInLeft;
+      }
+
+      /* Input Fields */
+      input {
+        padding: 14px;
+        width: 100%;
+        margin-top: 12px;
+        font-size: 1rem;
+        border: 1px solid #c8e6c9;
+        border-radius: 10px;
+        transition: 0.3s ease;
+        background: rgba(255, 255, 255, 0.9);
+      }
+
+      input:focus {
+        outline: none;
+        border-color: #2e7d32;
+        box-shadow: 0 0 6px rgba(76, 175, 80, 0.4);
+      }
+
+      /* Button Styling */
+      button {
+        padding: 14px;
+        width: 100%;
+        margin-top: 16px;
+        font-size: 1rem;
+        background: linear-gradient(to right, #43a047, #2e7d32);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      button:hover {
+        background: linear-gradient(to right, #388e3c, #1b5e20);
+        transform: translateY(-2px) scale(1.01);
+        box-shadow: 0 6px 18px rgba(46, 125, 50, 0.3);
+      }
+
+      button:active {
+        transform: translateY(0);
+      }
+
+      /* Timestamp */
+      .timestamp {
+        font-size: 0.75em;
+        color: #555;
+        text-align: right;
+        margin-top: 4px;
+        padding-right: 10px;
+        animation: fadeIn 0.4s ease forwards;
+      }
+
+      /* Loading */
+      .loading {
+        font-style: italic;
+        color: #689f38;
+        margin: 6px 0;
+        animation: pulse 1.5s infinite ease-in-out;
+      }
+
+      /* Animations */
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes slideInRight {
+        from {
+          transform: translateX(30px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes slideInLeft {
+        from {
+          transform: translateX(-30px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes slideFadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes zoomFadeIn {
+        from {
+          transform: scale(0.95);
+          opacity: 0;
+        }
+        to {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 0.6;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
+
+      /* Scrollbar Styling */
+      #messages::-webkit-scrollbar {
+        width: 10px;
+      }
+
+      #messages::-webkit-scrollbar-track {
+        background: #e8f5e9;
+        border-radius: 10px;
+      }
+
+      #messages::-webkit-scrollbar-thumb {
+        background: #81c784;
+        border-radius: 10px;
+      }
+
+      #messages::-webkit-scrollbar-thumb:hover {
+        background: #66bb6a;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="login-section">
+      <h2>Welcome to ClassyBot</h2>
+      <input type="email" id="email" placeholder="Enter your email" required />
+      <button onclick="startSession()">Start Chat</button>
+    </div>
+
+    <div id="chat-section">
+      <h3>ClassyBot</h3>
+      <div id="messages"></div>
+      <input
+        type="text"
+        id="queryInput"
+        placeholder="Ask something..."
+        onkeydown="handleKey(event)"
+      />
+      <button onclick="sendMessage()">Send</button>
+      <button onclick="clearChat()">Clear Chat</button>
+    </div>
+
+    <script>
+      let sessionId = null;
+
+      function startSession() {
+        const email = document.getElementById("email").value.trim();
+        if (!email) return alert("Please enter your email.");
+
+        sessionId = btoa(email);
+        localStorage.setItem("classybot-session", sessionId);
+
+        location.reload();
+      }
+
+      function handleKey(e) {
+        if (e.key === "Enter") sendMessage();
+      }
+
+      async function sendMessage() {
+        const input = document.getElementById("queryInput");
+        const query = input.value.trim();
+        if (!query) return;
+
+        appendMessage("user", query);
+        input.value = "";
+
+        // Show loading indicator
+        const loadingDiv = document.createElement("div");
+        loadingDiv.className = "bot";
+        loadingDiv.id = "loading";
+        loadingDiv.innerHTML = `<div class="bubble loading">Typing...</div>`;
+        document.getElementById("messages").appendChild(loadingDiv);
+        scrollToBottom();
+
+        try {
+          const res = await fetch("http://localhost:8000/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query, session_id: sessionId }),
+          });
+
+          const data = await res.json();
+
+          // Remove loading
+          document.getElementById("loading")?.remove();
+
+          appendMessage("bot", data.response);
+        } catch (err) {
+          document.getElementById("loading")?.remove();
+          appendMessage("bot", "⚠️ Error contacting the server.");
+          console.error(err);
+        }
+      }
+
+      function scrollToBottom() {
+        const messages = document.getElementById("messages");
+        messages.scrollTop = messages.scrollHeight;
+      }
+
+      // Auto-login if session exists
+      window.onload = async () => {
+        const savedSession = localStorage.getItem("classybot-session");
+        if (savedSession) {
+          sessionId = savedSession;
+          document.getElementById("login-section").style.display = "none";
+          document.getElementById("chat-section").style.display = "block";
+
+          try {
+            const res = await fetch(
+              `http://localhost:8000/messages?session_id=${sessionId}`
+            );
+            const data = await res.json();
+
+            if (data.messages && Array.isArray(data.messages)) {
+              data.messages.forEach(({ sender, message, timestamp }) => {
+                appendMessage(sender, message, timestamp);
+              });
+            }
+          } catch (err) {
+            console.error("Failed to load previous messages", err);
+          }
+        }
+      };
+
+      function appendMessage(sender, message, timestampStr = null) {
+        const messages = document.getElementById("messages");
+        const div = document.createElement("div");
+        div.className = sender;
+
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+        bubble.innerText = message;
+
+        const timestamp = document.createElement("div");
+        timestamp.className = "timestamp";
+
+        // Use provided timestamp or current time
+        const now = timestampStr ? new Date(timestampStr) : new Date();
+        const today = new Date();
+        const isToday = now.toDateString() === today.toDateString();
+
+        timestamp.innerText = isToday
+          ? now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+          : now.toLocaleString([], {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+
+        div.appendChild(bubble);
+        div.appendChild(timestamp);
+        messages.appendChild(div);
+        scrollToBottom();
+      }
+
+      async function clearChat() {
+        const messages = document.getElementById("messages");
+        messages.innerHTML = "";
+
+        try {
+          const res = await fetch(
+            `http://localhost:8000/clear_messages?session_id=${sessionId}`,
+            {
+              method: "DELETE",
+            }
+          );
+          const data = await res.json();
+          console.log(data.message);
+        } catch (err) {
+          console.error("Failed to clear chat in backend:", err);
+          alert("⚠️ Failed to clear chat history from server.");
+        }
+      }
+    </script>
+  </body>
+</html>

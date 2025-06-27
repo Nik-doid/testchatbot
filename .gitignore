@@ -1,0 +1,10 @@
+venv
+backend/__pycache__
+chroma_db
+.env
+__pycache__
+scrape.py
+backend/documents
+docker-compose.yml
+delete.py
+get.py
