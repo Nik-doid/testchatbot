@@ -1,0 +1,25 @@
+# Core LangChain and integrations
+langchain
+langchain_community
+langchain_ollama
+langchain_groq
+langchain_huggingface
+
+# Vector store and embeddings
+pymilvus
+redis
+redis[asyncio]
+
+# Document loaders
+unstructured
+markdown
+beautifulsoup4
+
+# FastAPI and utilities
+fastapi
+uvicorn
+python-dotenv
+pydantic
+
+# Language detection
+langdetect
