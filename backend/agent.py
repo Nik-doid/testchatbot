@@ -1,3 +1,7 @@
+import os
+import logging
+from dotenv import load_dotenv
+from langdetect import detect
 from langchain_ollama import OllamaLLM
 from langchain_groq import ChatGroq
 from langchain.chains import ConversationalRetrievalChain
@@ -5,40 +9,28 @@ from langchain.memory import ConversationBufferMemory
 from langchain_community.chat_message_histories import RedisChatMessageHistory
 from langchain.prompts import PromptTemplate
 from .vector_store import get_vector_store
-from dotenv import load_dotenv
-from langdetect import detect
-import os
 
 load_dotenv()
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
+# --- Small Talk Mapping ---
 SMALL_TALK_RESPONSES = {
     "hello": "Hello! How can I help you today?",
     "hi": "Hi there! What can I assist you with?",
     "hey": "Hey! How can I assist you?",
     "how are you": "I'm doing great! How can I help you today?",
-    "how are you?": "I'm doing great! How can I help you today?",
-    "how's it going": "I'm doing well, thanks! What can I do for you?",
-    "how's everything": "Everything is great, thanks for asking! How can I assist you?",
     "thank you": "You're welcome!",
     "thanks": "Glad to help!",
-    "thanks a lot": "You're very welcome!",
-    "thank you very much": "My pleasure!",
     "bye": "Goodbye! Have a nice day!",
-    "goodbye": "Goodbye! Take care!",
-    "see you": "See you later! Have a great day!",
     "good morning": "Good morning! How can I assist you today?",
     "good evening": "Good evening! How may I help you?",
     "good night": "Good night! Sleep well!",
     "what's up": "Not much! How can I help you?",
-    "sup": "Hey! What can I do for you?",
     "nice to meet you": "Nice to meet you too! How can I help?",
-    "thank you so much": "You're very welcome!",
-    "thanks so much": "Happy to help!",
     "how can you help me": "I’m here to assist you with any questions you have.",
     "are you there": "Yes, I'm here! How can I assist?",
-    "can you help me": "Absolutely! What do you need help with?",
     "i need help": "Sure! Please tell me what you need help with.",
-    "good afternoon": "Good afternoon! How can I assist you today?",
     "thanks for your help": "Anytime! Glad to help.",
 }
 
@@ -46,10 +38,13 @@ def detect_small_talk(query: str) -> str | None:
     normalized = query.lower().strip()
     return SMALL_TALK_RESPONSES.get(normalized)
 
-API_KEY = os.getenv("GROQ_API")
+# --- Load API keys & model setup ---
+GROQ_API_KEY = os.getenv("GROQ_API")
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+
 llm = ChatGroq(
     model_name="llama3-70b-8192",
-    api_key=API_KEY,
+    api_key=GROQ_API_KEY,
     temperature=0.7
 )
 
@@ -78,16 +73,17 @@ rag_prompt = PromptTemplate(
     template=rag_prompt_template
 )
 
+# --- Main Agent Function ---
 def chatbot_agent(query: str, session_id: str = "default") -> str:
     small_talk_response = detect_small_talk(query)
     if small_talk_response:
         return small_talk_response
 
     try:
-        # Detect language
         language = detect(query)
-    except Exception:
-        language = "en"  # fallback to English if detection fails
+    except Exception as e:
+        logger.warning(f"Language detection failed: {e}")
+        language = "en"
 
     fallback_phrases = [
         "i don't know", "i'm not sure", "couldn't find", "not listed", "don't have",
@@ -95,9 +91,8 @@ def chatbot_agent(query: str, session_id: str = "default") -> str:
     ]
 
     try:
-        redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
         message_history = RedisChatMessageHistory(
-            url=redis_url,
+            url=REDIS_URL,
             session_id=session_id
         )
 
@@ -121,12 +116,14 @@ def chatbot_agent(query: str, session_id: str = "default") -> str:
             response_text = response_text.content
 
     except Exception as e:
-        return f"Error during RAG processing: {str(e)}"
+        logger.error(f"RAG processing error: {e}")
+        return "Sorry, I encountered an issue processing your request. Please try again later."
 
+    # --- Fallback to general LLM answer if RAG is not helpful ---
     if not response_text or any(phrase in response_text.lower() for phrase in fallback_phrases):
-        if language == "ne":
-            fallback_prompt = f"""
-तपाईं ClassyBot हुनुहुन्छ, Classic Tech (नेपालको एक इन्टरनेट र आइपिटिभी सेवा प्रदायक) को लागि जानकार सहायक।
+        fallback_prompt = (
+            f"""
+तपाईं ClassyBot हुनुहुन्छ, Classic Tech (नेपालको इन्टरनेट र आइपिटिभी सेवा प्रदायक) को लागि जानकार सहायक।
 
 कृपया प्रयोगकर्ताको सोधिएको प्रश्नलाई तपाईंको ज्ञानको भरमा नेपाली भाषामा उत्तर दिनुहोस्।
 
@@ -136,8 +133,8 @@ def chatbot_agent(query: str, session_id: str = "default") -> str:
 
 उत्तर:
 """
-        else:
-            fallback_prompt = f"""
+            if language == "ne" else
+            f"""
 You are ClassyBot, a knowledgeable support assistant for Classic Tech (an ISP and IPTV provider in Nepal).
 
 Please help the user with their question using your best general knowledge.
@@ -150,11 +147,14 @@ User question: {query}
 
 Answer:
 """
+        )
+
         try:
             response_text = llm.invoke(fallback_prompt)
             if hasattr(response_text, 'content'):
                 response_text = response_text.content
         except Exception as e:
-            return f"LLM fallback error: {str(e)}"
+            logger.error(f"LLM fallback error: {e}")
+            return "Sorry, I'm unable to answer that at the moment. Please try again later."
 
     return response_text
