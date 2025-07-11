@@ -40,7 +40,7 @@ def detect_small_talk(query: str) -> str | None:
 
 # --- Load API keys & model setup ---
 GROQ_API_KEY = os.getenv("GROQ_API")
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+REDIS_URL = os.getenv("REDIS_URL")
 
 llm = ChatGroq(
     model_name="llama3-70b-8192",
