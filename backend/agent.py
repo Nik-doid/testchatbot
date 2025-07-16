@@ -43,7 +43,7 @@ GROQ_API_KEY = os.getenv("GROQ_API")
 REDIS_URL = os.getenv("REDIS_URL")
 
 llm = ChatGroq(
-    model_name="llama3-70b-8192",
+    model_name="meta-llama/llama-4-maverick-17b-128e-instruct",
     api_key=GROQ_API_KEY,
     temperature=0.7
 )
