@@ -9,6 +9,7 @@ from langchain.memory import ConversationBufferMemory
 from langchain_community.chat_message_histories import RedisChatMessageHistory
 from langchain.prompts import PromptTemplate
 from .vector_store import get_vector_store
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -42,9 +43,15 @@ def detect_small_talk(query: str) -> str | None:
 GROQ_API_KEY = os.getenv("GROQ_API")
 REDIS_URL = os.getenv("REDIS_URL")
 
-llm = ChatGroq(
-    model_name="meta-llama/llama-4-maverick-17b-128e-instruct",
-    api_key=GROQ_API_KEY,
+# llm = ChatGroq(
+#     model_name="meta-llama/llama-4-maverick-17b-128e-instruct",
+#     api_key=GROQ_API_KEY,
+#     temperature=0.7
+# )
+
+llm = ChatGoogleGenerativeAI(
+    model="gemini-2.0-flash",
+    google_api_key=os.getenv("GOOGLE_API_KEY"),
     temperature=0.7
 )
 
